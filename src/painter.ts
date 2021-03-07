@@ -6,17 +6,11 @@ class ComplexProjection {
 	scale: number = 100;
 
 	project(value: Complex): [number, number] {
-		return [
-			value.real * this.scale + this.originX,
-			-value.imag * this.scale + this.originY,
-		];
+		return [value.real * this.scale + this.originX, -value.imag * this.scale + this.originY];
 	}
 
 	map(x: number, y: number): Complex {
-		return new Complex(
-			(x - this.originX) / this.scale,
-			-(y - this.originY) / this.scale
-		);
+		return new Complex((x - this.originX) / this.scale, -(y - this.originY) / this.scale);
 	}
 }
 
@@ -179,10 +173,7 @@ export class HyperbolicContext extends Painter<Complex | oo> {
 			this.context.lineTo(c[0], c[1]);
 		} else {
 			if (to == oo) {
-				this.context.lineTo(
-					this.projection.project(last as Complex)[0],
-					-5
-				);
+				this.context.lineTo(this.projection.project(last as Complex)[0], -5);
 				return;
 			}
 
@@ -202,14 +193,7 @@ export class HyperbolicContext extends Painter<Complex | oo> {
 			c2 = c2.sub(C);
 			let a1 = c1.arg();
 			let a2 = c2.arg();
-			this.context.arc(
-				CP[0],
-				CP[1],
-				c1.abs() * this.projection.scale,
-				-a1,
-				-a2,
-				a1 < a2
-			);
+			this.context.arc(CP[0], CP[1], c1.abs() * this.projection.scale, -a1, -a2, a1 < a2);
 		}
 	}
 }

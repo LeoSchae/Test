@@ -30,20 +30,17 @@ export class Complex implements TeXable {
 	}
 
 	add(other: number | Complex): Complex {
-		if (typeof other === "number")
-			return new Complex(this.real + other, this.imag);
+		if (typeof other === "number") return new Complex(this.real + other, this.imag);
 		else return new Complex(this.real + other.real, this.imag + other.imag);
 	}
 
 	sub(other: number | Complex): Complex {
-		if (typeof other === "number")
-			return new Complex(this.real - other, this.imag);
+		if (typeof other === "number") return new Complex(this.real - other, this.imag);
 		else return new Complex(this.real - other.real, this.imag - other.imag);
 	}
 
 	mul(other: number | Complex): Complex {
-		if (typeof other === "number")
-			return new Complex(other * this.real, other * this.imag);
+		if (typeof other === "number") return new Complex(other * this.real, other * this.imag);
 		else
 			return new Complex(
 				this.real * other.real - this.imag * other.imag,
@@ -52,8 +49,7 @@ export class Complex implements TeXable {
 	}
 
 	div(other: number | Complex): Complex {
-		if (typeof other === "number")
-			return new Complex(this.real / other, this.imag / other);
+		if (typeof other === "number") return new Complex(this.real / other, this.imag / other);
 		else {
 			return this.mul(other.inv());
 		}
@@ -134,10 +130,7 @@ export namespace congruenceSubgroups {
 		indicator: (level: number, value: Moebius) => boolean;
 		tex: String;
 
-		constructor(
-			indicator: (level: number, value: Moebius) => boolean,
-			tex: String
-		) {
+		constructor(indicator: (level: number, value: Moebius) => boolean, tex: String) {
 			this.indicator = indicator;
 			this.tex = tex;
 		}
@@ -223,13 +216,7 @@ export namespace congruenceSubgroups {
 		);
 	}
 
-	export const Gamma_0 = new CongruenceSubgroup(
-		_gamma_0_indicator,
-		"\\Gamma_0"
-	);
-	export const Gamma_1 = new CongruenceSubgroup(
-		_gamma_1_indicator,
-		"\\Gamma_1"
-	);
+	export const Gamma_0 = new CongruenceSubgroup(_gamma_0_indicator, "\\Gamma_0");
+	export const Gamma_1 = new CongruenceSubgroup(_gamma_1_indicator, "\\Gamma_1");
 	export const Gamma = new CongruenceSubgroup(_gamma_indicator, "\\Gamma");
 }
