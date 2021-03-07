@@ -5,10 +5,14 @@ export enum MathType {
     Moebius = "moebius"
 }
 
+interface TeXable {
+    toTeX(): String;
+}
+
 export type oo = {mathtype: MathType.Infinity};
 export const oo: oo = {mathtype: MathType.Infinity}
 
-export class Complex {
+export class Complex implements TeXable {
     mathtype = MathType.Complex;
     real: number;
     imag: number;
@@ -78,11 +82,20 @@ export class Complex {
           return phi;
         }
         return Math.atan(1.0 * im / re) + Math.PI;
-      }
+    }
+
+    toTeX() {
+        if(this.imag == 0)
+            return `${this.real}`;
+        else if(this.real == 0)
+            return `${this.imag}i`;
+        else
+            return `${this.real} + ${this.imag}i`;
+    }
 }
 
 
-export class Moebius {
+export class Moebius implements TeXable {
     mathtype: MathType.Moebius;
     m: number[];
     
@@ -116,15 +129,21 @@ export class Moebius {
             return oo;
           return (value as Complex).mul(m[0]).add(m[1]).div(q)
     }
+
+    toTeX() {
+        return `\\begin{pmatrix}${this.m[0]}&${this.m[1]}\\${this.m[2]}&${this.m[3]}\\end{pmatrix}`;
+    }
 }
 
 export namespace congruenceSubgroups {
-    class CongruenceSubgroup {
+    class CongruenceSubgroup implements TeXable {
 
         indicator: (level: number, value: Moebius) => boolean;
-    
-        constructor(indicator: (level: number, value: Moebius) => boolean) {
+        tex: String;
+
+        constructor(indicator: (level: number, value: Moebius) => boolean, tex: String) {
             this.indicator = indicator;
+            this.tex = tex;
         }
     
         findCosetIndex(level: number, list: Moebius[], value: Moebius): number {
@@ -172,7 +191,10 @@ export namespace congruenceSubgroups {
             }
             return reprs;
         }
-    
+        
+        toTeX() {
+            return this.tex;
+        }
     }
 
     function _mod_eq(v1: number, v2: number, modulus: number) {
@@ -191,7 +213,7 @@ export namespace congruenceSubgroups {
         return _mod_eq(value.m[2], 0, level) && _mod_eq(value.m[1], 0, level) && (_mod_eq(value.m[0], 1, level) || _mod_eq(value.m[0], -1, level));
     }
     
-    export const Gamma_0 = new CongruenceSubgroup(_gamma_0_indicator);
-    export const Gamma_1 = new CongruenceSubgroup(_gamma_1_indicator);
-    export const Gamma = new CongruenceSubgroup(_gamma_indicator);
+    export const Gamma_0 = new CongruenceSubgroup(_gamma_0_indicator, "\\Gamma_0");
+    export const Gamma_1 = new CongruenceSubgroup(_gamma_1_indicator, "\\Gamma_1");
+    export const Gamma = new CongruenceSubgroup(_gamma_indicator, "\\Gamma");
 }

@@ -13,9 +13,8 @@ window.addEventListener("load", () => {
 
   const canvas = document.getElementById("testcanvas") as HTMLCanvasElement;
   const hp = new paint.HyperbolicContext(canvas.getContext("2d"));
-  let t1 = performance.now()
-  hp.context.lineWidth=1
-  hp.context.strokeStyle = "#FF0000"
+  
+  hp.strokeStyle = "#FF0000"
 
   let e0 = math.oo, e1 = new math.Complex(Math.cos(Math.PI/3),Math.sin(Math.PI/3)), e2 = new math.Complex(-e1.real, e1.imag)
   let dom = [e0, e1, e2, e0]
@@ -23,8 +22,10 @@ window.addEventListener("load", () => {
   for(let g of group) {
     hp.beginShape()
     hp.polyLine(dom.map(x => g.transform(x)))
-    hp.context.fill()
+    //hp.fill()
     hp.stroke();
   }
+  let t1 = performance.now()
+  hp.axis();
   console.log(performance.now()-t1)
 });

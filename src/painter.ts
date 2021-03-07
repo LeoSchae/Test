@@ -1,4 +1,4 @@
-import {Complex, oo, MathType} from "./math";
+import {Complex, oo} from "./math";
 
 class ComplexProjection {
     originX: number = 300;
@@ -14,63 +14,146 @@ class ComplexProjection {
     }
 }
 
-export class HyperbolicContext {
-    context: CanvasRenderingContext2D;
-    projection: ComplexProjection = new ComplexProjection();
+abstract class Painter<T> {
 
-    position: Complex | oo = null;
+    context: CanvasRenderingContext2D;
+    private shapeStart: T = null;
+    private position: T = null;
 
     constructor(context: CanvasRenderingContext2D) {
         this.context = context;
     }
 
-    polyLine(points: Iterable<Complex | oo>) {
-        for(let p of points) {
+    protected abstract _project(point: T): number[] | null;
+    protected abstract _drawLine(from: T, to: T): void;
+
+    beginShape(position: T = null) {
+        this.context.beginPath()
+        this.position = null;
+        this.shapeStart = null;
+        if(position != null)
+            this.moveTo(position);
+    }
+
+    closeShape() {
+        this.lineTo(this.shapeStart);
+        this.context.closePath();
+    }
+        
+    moveTo(position: T) {
+        if(this.shapeStart == null)
+            this.shapeStart = position;
+        const p = this._project(position);
+        if(p != null)
+            this.context.moveTo(p[0], p[1]);
+        this.position = position;
+    }
+
+    lineTo(position: T) {
+        if(this.position == null)
+            this.moveTo(position);
+        else {
+            this._drawLine(this.position, position);
+            this.position = position;
+        }
+    }
+
+    polyLine(positions: Iterable<T>) {
+        for(let p of positions) {
             this.lineTo(p);
         }
     }
 
-    beginShape(position: Complex | oo = null) {
+    set strokeStyle(value: string | CanvasGradient | CanvasPattern) {
+        this.context.strokeStyle = value;
+    }
+
+    set fillStyle(value: string | CanvasGradient | CanvasPattern) {
+        this.context.fillStyle = value;
+    }
+
+    stroke() {
+        this.context.stroke();
+    }
+
+    fill() {
+        this.context.fill();
+    }
+}
+
+export class HyperbolicContext extends Painter<Complex | oo> {
+
+    projection: ComplexProjection = new ComplexProjection();
+
+    axis() {
+        this.context.save()
+        this.fillStyle = "#000000"
+        this.strokeStyle = "#000000"
+        this.context.lineWidth = 1.25
+        this.context.textBaseline = "top"
+        this.context.font = "10px Sans-Serif"
+
+        const aW = 3, aH = 6;
+        const {originX, originY} = this.projection;
+        const {width, height} = this.context.canvas;
+
+        // Axes
         this.context.beginPath();
-        if(position === null)
-            this.position = null;
-        else
-            this.moveTo(position);
+        this.context.moveTo(originX,aH);
+        this.context.lineTo(originX,height);
+        this.context.moveTo(aH,originY);
+        this.context.lineTo(width-aH,originY);
+        this.stroke();
+
+        // Arrows
+        this.context.beginPath()
+        this.context.moveTo(originX-aW,aH)
+        this.context.lineTo(originX+aW, aH)
+        this.context.lineTo(originX, 0)
+        this.context.lineTo(originX-aW,aH)
+        this.context.fill()
+
+        this.context.beginPath()
+        this.context.moveTo(width-aH,originY-aW)
+        this.context.lineTo(width-aH,originY+aW)
+        this.context.lineTo(width,originY)
+        this.context.lineTo(width-aH,originY-aW)
+        this.context.fill()
+        
+        const tm1 = this.context.measureText("Im")
+        this.context.fillText("Im", originX-tm1.width-3, 0)
+        const tm2 = this.context.measureText("Re")
+        this.context.fillText("Re", width-tm2.width, originY+3)
+
+        this.context.restore()
     }
 
-    moveTo(position: Complex | oo) {
-        if(position.mathtype == MathType.Infinity)
-            this.position = position;
-        else {
-            const p = this.projection.project(position as Complex);
-            this.position = position;
-            this.context.moveTo(p[0], p[1]);
-        }
+    _project(p: Complex | oo) {
+        if(p == oo)
+            return null;
+        return this.projection.project(p as Complex);
     }
 
-    lineTo(position: Complex | oo, segments: number = 10) {
-        if(this.position == null)
-            this.moveTo(position);
-        else if(this.position.mathtype == MathType.Infinity) {
-            if(position.mathtype == MathType.Infinity)
+    _drawLine(last: Complex | oo, to: Complex | oo) {
+        if(last == oo) {
+            if(to == oo)
                 return;
-            const p = this.projection.project(position as Complex);
-            this.position = position;
-            this.context.moveTo(p[0], -5)
-            this.context.lineTo(p[0], p[1]);
+            
+            const c = this.projection.project(to as Complex);
+            this.context.moveTo(c[0], -5)
+            this.context.lineTo(c[0], c[1]);
         } else {
-            if(position.mathtype == MathType.Infinity) {
-                this.context.lineTo(this.projection.project(this.position as Complex)[0], -5)
-                this.position = position;
+            if(to == oo) {
+                this.context.lineTo(this.projection.project(last as Complex)[0], -5)
                 return;
             }
-            let c1 = this.position as Complex;
-            let c2 = position as Complex;
+
+            let c1 = last as Complex;
+            let c2 = to as Complex;
 
             if(Math.abs(c1.real-c2.real) < 0.0000000001) { // Draw straight line between points
                 let p = this.projection.project(c2);
                 this.context.lineTo(p[0], p[1]);
-                this.position = position;
                 return;
             }
 
@@ -81,12 +164,6 @@ export class HyperbolicContext {
             let a1 = c1.arg();
             let a2 = c2.arg();
             this.context.arc(CP[0], CP[1], c1.abs()*this.projection.scale, -a1, -a2, a1<a2);
-
-            this.position = position;
         }
-    }
-
-    stroke() {
-        this.context.stroke();
     }
 }
