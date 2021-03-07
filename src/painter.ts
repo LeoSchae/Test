@@ -1,20 +1,34 @@
 import { Complex, oo } from "./math";
 
-class ComplexProjection {
-	originX: number = 300;
-	originY: number = 300;
+export class ComplexProjection {
+	origin: [number, number] = [300, 300];
 	scale: number = 100;
 
 	project(value: Complex): [number, number] {
-		return [value.real * this.scale + this.originX, -value.imag * this.scale + this.originY];
+		return [
+			value.real * this.scale + this.origin[0],
+			-value.imag * this.scale + this.origin[1],
+		];
 	}
 
 	map(x: number, y: number): Complex {
-		return new Complex((x - this.originX) / this.scale, -(y - this.originY) / this.scale);
+		return new Complex((x - this.origin[0]) / this.scale, -(y - this.origin[1]) / this.scale);
+	}
+
+	translate(x: number, y: number) {
+		const [ox, oy] = this.origin;
+		this.origin = [ox + x, oy + y];
+	}
+
+	zoom(mag: number, x: number, y: number) {
+		const fac = Math.exp(mag);
+		const [ox, oy] = this.origin;
+		this.origin = [ox * fac + x * (1 - fac), oy * fac + y * (1 - fac)];
+		this.scale *= fac;
 	}
 }
 
-abstract class Painter<T> {
+export abstract class Painter<T> {
 	context: CanvasRenderingContext2D;
 	private shapeStart: T = null;
 	private position: T = null;
@@ -89,36 +103,38 @@ export class HyperbolicContext extends Painter<Complex | oo> {
 
 		const aW = 3,
 			aH = 6;
-		const { originX, originY } = this.projection;
+		const {
+			origin: [x, y],
+		} = this.projection;
 		const { width, height } = this.context.canvas;
 
 		// Axes
 		this.context.beginPath();
-		this.context.moveTo(originX, aH);
-		this.context.lineTo(originX, height);
-		this.context.moveTo(aH, originY);
-		this.context.lineTo(width - aH, originY);
+		this.context.moveTo(x, aH);
+		this.context.lineTo(x, height);
+		this.context.moveTo(aH, y);
+		this.context.lineTo(width - aH, y);
 		this.stroke();
 
 		// Arrows
 		this.context.beginPath();
-		this.context.moveTo(originX - aW, aH);
-		this.context.lineTo(originX + aW, aH);
-		this.context.lineTo(originX, 0);
-		this.context.lineTo(originX - aW, aH);
+		this.context.moveTo(x - aW, aH);
+		this.context.lineTo(x + aW, aH);
+		this.context.lineTo(x, 0);
+		this.context.lineTo(x - aW, aH);
 		this.context.fill();
 
 		this.context.beginPath();
-		this.context.moveTo(width - aH, originY - aW);
-		this.context.lineTo(width - aH, originY + aW);
-		this.context.lineTo(width, originY);
-		this.context.lineTo(width - aH, originY - aW);
+		this.context.moveTo(width - aH, y - aW);
+		this.context.lineTo(width - aH, y + aW);
+		this.context.lineTo(width, y);
+		this.context.lineTo(width - aH, y - aW);
 		this.context.fill();
 
 		const tm1 = this.context.measureText("Im");
-		this.context.fillText("Im", originX - tm1.width - 6, 2);
+		this.context.fillText("Im", x - tm1.width - 6, 2);
 		const tm2 = this.context.measureText("Re");
-		this.context.fillText("Re", width - tm2.width - 3, originY + 6);
+		this.context.fillText("Re", width - tm2.width - 3, y + 6);
 
 		this.context.restore();
 	}
@@ -193,6 +209,7 @@ export class HyperbolicContext extends Painter<Complex | oo> {
 			c2 = c2.sub(C);
 			let a1 = c1.arg();
 			let a2 = c2.arg();
+
 			this.context.arc(CP[0], CP[1], c1.abs() * this.projection.scale, -a1, -a2, a1 < a2);
 		}
 	}

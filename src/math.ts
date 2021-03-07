@@ -64,8 +64,8 @@ export class Complex implements TeXable {
 		var re = this.real;
 		var im = this.imag;
 		if (re == 0) {
-			if (im < 0) return 0.5 * Math.PI;
-			else if (im > 0) return 1.5 * Math.PI;
+			if (im > 0) return 0.5 * Math.PI;
+			else if (im < 0) return 1.5 * Math.PI;
 			else return 0;
 		}
 		if (re >= 0) {
@@ -219,4 +219,38 @@ export namespace congruenceSubgroups {
 	export const Gamma_0 = new CongruenceSubgroup(_gamma_0_indicator, "\\Gamma_0");
 	export const Gamma_1 = new CongruenceSubgroup(_gamma_1_indicator, "\\Gamma_1");
 	export const Gamma = new CongruenceSubgroup(_gamma_indicator, "\\Gamma");
+
+	const e_pi_3 = new Complex(Math.cos(Math.PI / 3), Math.sin(Math.PI / 3));
+
+	export type FundamentalDomain = {
+		corners: (Complex | oo)[];
+		findCosetOf: (value: Complex) => Moebius;
+	};
+
+	export const Domain1: FundamentalDomain = {
+		corners: [oo, e_pi_3, new Complex(0.0, 1.0), new Complex(-e_pi_3.real, e_pi_3.imag)],
+		findCosetOf(value: Complex, maxIter: number = 100) {
+			if (value.imag <= 0) return null;
+
+			let result = new Moebius(1, 0, 0, 1);
+			let current = value;
+
+			for (var i = 0; i < maxIter; i++) {
+				if (current == oo) return result.inv();
+
+				var n = Math.floor(current.real + 0.5);
+				result = new Moebius(1, -n, 0, 1).mul(result);
+				current = result.transform(value) as Complex;
+
+				if (current.abs2() >= 1) {
+					return result.inv();
+				}
+
+				result = new Moebius(0, 1, -1, 0).mul(result);
+				current = result.transform(value) as Complex;
+			}
+			console.log("Max iterations in 'findMoebiousToFund' reached");
+			return null;
+		},
+	};
 }
