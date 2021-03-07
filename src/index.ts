@@ -1,31 +1,31 @@
 import * as math from "./math";
 import * as paint from "./painter";
 
-function* test(t: math.oo) {
-  yield math.oo;
-  yield math.oo;
+var group = math.congruenceSubgroups.Gamma_0.cosetRepresentatives(4);
+var ctx: paint.HyperbolicContext;
+var domain = [
+	math.oo,
+	new math.Complex(Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)),
+	new math.Complex(-Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)),
+];
+
+function repaint() {
+	const { width, height } = ctx.context.canvas;
+	ctx.context.fillRect(0, 0, width, height);
+
+	for (let g of group) {
+		ctx.beginShape();
+		ctx.polyLine(domain.map((x) => g.transform(x)));
+		ctx.closeShape();
+		ctx.fill();
+		ctx.stroke();
+	}
+
+	ctx.axis();
+	ctx.annotateFrac("Re", [1, 2]);
 }
 
-test(math.oo);
-
 window.addEventListener("load", () => {
-  let group = math.congruenceSubgroups.Gamma_0.cosetRepresentatives(4);
-
-  const canvas = document.getElementById("testcanvas") as HTMLCanvasElement;
-  const hp = new paint.HyperbolicContext(canvas.getContext("2d"));
-  
-  hp.strokeStyle = "#FF0000"
-
-  let e0 = math.oo, e1 = new math.Complex(Math.cos(Math.PI/3),Math.sin(Math.PI/3)), e2 = new math.Complex(-e1.real, e1.imag)
-  let dom = [e0, e1, e2, e0]
-
-  for(let g of group) {
-    hp.beginShape()
-    hp.polyLine(dom.map(x => g.transform(x)))
-    //hp.fill()
-    hp.stroke();
-  }
-  let t1 = performance.now()
-  hp.axis();
-  console.log(performance.now()-t1)
+	const canvas = document.getElementById("testcanvas") as HTMLCanvasElement;
+	ctx = new paint.HyperbolicContext(canvas.getContext("2d"));
 });
