@@ -1,14 +1,11 @@
 import * as math from "./math";
 import * as paint from "./painter";
 
-var group = math.congruenceSubgroups.Gamma_0.cosetRepresentatives(30);
+var group = math.congruenceSubgroups.Gamma.cosetRepresentatives(10);
 var fgCtx: paint.HyperbolicContext;
 var bgCtx: paint.HyperbolicContext;
-var projection: paint.ComplexProjection;
 
-var mouseIn = false,
-	mouseX = 0,
-	mouseY = 0;
+var mouse: [number, number] | null = null;
 
 var domain = math.congruenceSubgroups.Domain1;
 
@@ -20,7 +17,7 @@ function repaintFg() {
 
 	let m: math.Moebius = null;
 
-	if (mouseIn) m = domain.findCosetOf(projection.map(mouseX, mouseY));
+	if (mouse != null) m = domain.findCosetOf(fgCtx.projection.map(...mouse));
 
 	if (m != null) {
 		ctx.fillStyle = "#3333AA55";
@@ -65,115 +62,141 @@ function requestRepaint(fg: boolean = true, bg: boolean = true) {
 }
 
 window.addEventListener("load", () => {
-	let root = document.getElementById("root");
-
-	root.addEventListener("resize", (ev) => {
-		console.log(root.clientWidth, root.clientWidth);
-	});
+	let pixelRatio = window.devicePixelRatio;
 
 	const fgCanvas = document.getElementById("bgcanvas") as HTMLCanvasElement;
 	const bgCanvas = document.getElementById("fgcanvas") as HTMLCanvasElement;
+
 	fgCtx = new paint.HyperbolicContext(fgCanvas.getContext("2d"));
 	bgCtx = new paint.HyperbolicContext(bgCanvas.getContext("2d"));
 	bgCtx.projection = fgCtx.projection;
-	projection = fgCtx.projection;
+	let projection = fgCtx.projection;
 
 	function fixSize(width: number, height: number) {
-		fgCanvas.width = width;
-		fgCanvas.height = height;
-		bgCanvas.width = width;
-		bgCanvas.height = height;
+		fgCanvas.width = pixelRatio * width;
+		fgCanvas.height = pixelRatio * height;
+		bgCanvas.width = pixelRatio * width;
+		bgCanvas.height = pixelRatio * height;
 	}
-
-	fixSize(window.innerWidth, window.innerHeight);
-
-	registerDragAndZoom(fgCanvas, null, null);
-
-	var downOnCanvas = false;
-	var px = 0,
-		py = 0;
-	fgCanvas.addEventListener("wheel", (ev) => {
-		projection.zoom(-ev.deltaY * (ev.deltaMode == 1 ? 0.03333 : 0.001), ev.x, ev.y);
-		ev.preventDefault();
-		requestRepaint();
-	});
-	fgCanvas.addEventListener("mousedown", (ev) => {
-		downOnCanvas = true;
-		px = ev.x;
-		py = ev.y;
-	});
-	fgCanvas.addEventListener("mousemove", (ev) => {
-		mouseIn = true;
-		mouseX = ev.x;
-		mouseY = ev.y;
-		requestRepaint(true, false);
-	});
-	fgCanvas.addEventListener("mouseleave", (ev) => {
-		mouseIn = false;
-		requestRepaint(true, false);
-	});
-	window.addEventListener("mouseup", (ev) => {
-		downOnCanvas = false;
-	});
-	window.addEventListener("mousemove", (ev) => {
-		if (downOnCanvas) {
-			const dx = ev.x - px,
-				dy = ev.y - py;
-			(px = ev.x), (py = ev.y);
-			projection.translate(dx, dy);
-			requestRepaint();
-		}
-	});
 	window.addEventListener("resize", (ev) => {
 		fixSize(window.innerWidth, window.innerHeight);
 		requestRepaint();
 	});
+
+	registerDragAndZoom(
+		fgCanvas,
+		(dZ, center) => {
+			projection.zoom(dZ, center[0] * pixelRatio, center[1] * pixelRatio);
+			requestRepaint();
+		},
+		(dir) => {
+			projection.translate(dir[0] * pixelRatio, dir[1] * pixelRatio);
+			requestRepaint();
+		},
+		(pos) => {
+			if (pos == null) mouse = null;
+			else mouse = [pos[0] * pixelRatio, pos[1] * pixelRatio];
+			requestRepaint(true, false); // only fg update
+		}
+	);
+
+	fixSize(window.innerWidth, window.innerHeight);
 	requestRepaint();
 });
 
 function registerDragAndZoom(
 	element: HTMLElement,
-	zoom: (dZ: number) => void,
-	scroll: (dX: number, dY: number) => void
+	zoom: (dZ: number, center: [number, number]) => void,
+	scroll: (direction: [number, number]) => void,
+	hover: (pos: [number, number] | null) => void
 ) {
+	// active pointers
 	let pEvs: Array<PointerEvent> = new Array();
-	let pDiff = -1;
-	let pCen = [0, 0];
 
-	element.addEventListener("pointerdown", (ev) => {
-		pEvs.push(ev);
-		console.log("down");
-	});
+	// old metrics
+	let pDist: number | -1 = -1;
+	let pPos: [number, number] | null = null;
+	let pCen: [number, number] = [0, 0];
+
+	// global events
 	element.addEventListener("pointerup", (ev) => {
+		if (ev.pointerType == "mouse" && ev.button != 0) return;
+
 		for (let i = 0; i < pEvs.length; i++)
 			if (pEvs[i].pointerId == ev.pointerId) {
 				pEvs.splice(i, 1);
+				element.releasePointerCapture(ev.pointerId);
 				break;
 			}
-		if (pEvs.length < 2) pDiff = -1;
+		pDist = -1;
+	});
+	element.addEventListener("pointercancel", (ev) => {
+		for (let i = 0; i < pEvs.length; i++)
+			if (pEvs[i].pointerId == ev.pointerId) {
+				pEvs.splice(i, 1);
+				element.releasePointerCapture(ev.pointerId);
+				break;
+			}
+		pDist = -1;
+	});
+	element.addEventListener("wheel", (ev) => {
+		zoom(-ev.deltaY * (ev.deltaMode == 1 ? 0.03333 : 0.001), [ev.x, ev.y]);
+		ev.preventDefault();
+	});
+	element.addEventListener("pointerdown", (ev) => {
+		if (ev.pointerType == "mouse" && ev.button != 0) return;
+
+		pEvs.push(ev);
+		element.setPointerCapture(ev.pointerId);
+		pPos = null;
+		pDist = -1;
+		if (pEvs.length <= 1) hover([ev.x, ev.y]);
+		else hover(null);
 	});
 	element.addEventListener("pointermove", (ev) => {
+		// Update trackers
 		for (let i = 0; i < pEvs.length; i++)
 			if (pEvs[i].pointerId == ev.pointerId) {
 				pEvs[i] = ev;
 				break;
 			}
-		if (pEvs.length == 2) {
+
+		if (pEvs.length <= 1) hover([ev.x, ev.y]);
+		else hover(null);
+
+		if (pEvs.length == 1) {
+			// drag
+			let pos: [number, number] = [ev.x, ev.y];
+
+			if (pPos != null) {
+				scroll([pos[0] - pPos[0], pos[1] - pPos[1]]);
+			}
+
+			pPos = pos;
+			ev.preventDefault();
+		} else if (pEvs.length == 2) {
+			// zoom and drag
 			let { x: x1, y: y1 } = pEvs[0];
 			let { x: x2, y: y2 } = pEvs[1];
 
 			let diff = Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-			let cen = [0.5 * (x1 + x2), 0.5 * (y1 + y2)];
+			let cen: [number, number] = [0.5 * (x1 + x2), 0.5 * (y1 + y2)];
 
-			if (pDiff > 0) {
-				let prDiff = diff / pDiff;
-				projection.translate(cen[0] - pCen[0], cen[1] - pCen[1]);
-				projection.zoom(Math.log(prDiff), cen[0], cen[1]);
-				requestRepaint();
+			if (pDist > 0) {
+				let prDiff = diff / pDist;
+				scroll([cen[0] - pCen[0], cen[1] - pCen[1]]);
+				zoom(Math.log(prDiff), cen);
 			}
 
 			pCen = cen;
-			pDiff = diff;
+			pDist = diff;
+			ev.preventDefault();
 		}
+	});
+	element.addEventListener("pointerleave", (ev) => {
+		if (ev.pointerType == "mouse") hover(null);
+	});
+	element.addEventListener("pause", (ev) => {
+		console.log(ev);
 	});
 }
