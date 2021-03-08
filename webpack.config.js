@@ -20,12 +20,12 @@ module.exports = {
 		extensions: [".tsx", ".ts", ".js"],
 	},
 	output: {
-		publicPath: "http://192.168.0.179:8080/",
+		publicPath: "",
 		filename: "bundle.[hash].js",
 		path: path.resolve(__dirname, "dist"),
 	},
 	plugins: [
-		new CopyPlugin({ patterns: [{ from: "public", to: "dist" }] }),
+		new CopyPlugin({ patterns: [{ from: "public", to: "" }] }),
 		new CleanWebpackPlugin(),
 		new HtmlWebpackPlugin({
 			template: path.resolve(__dirname, "./src/templates/index.html"),
