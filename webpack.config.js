@@ -23,6 +23,9 @@ module.exports = {
 		publicPath: "",
 		filename: "bundle.[hash].js",
 		path: path.resolve(__dirname, "dist"),
+		environment: {
+			arrowFunction: false,
+		},
 	},
 	plugins: [
 		new CopyPlugin({ patterns: [{ from: "public", to: "" }] }),

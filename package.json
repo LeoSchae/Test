@@ -1,11 +1,12 @@
 {
 	"name": "mathworker",
+	"devtool": "source-map",
 	"version": "1.0.0",
 	"description": "",
 	"main": "index.js",
 	"scripts": {
 		"build": "webpack",
-		"start": "webpack serve"
+		"start": "webpack serve --mode development"
 	},
 	"keywords": [],
 	"author": "",
