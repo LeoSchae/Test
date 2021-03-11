@@ -6,7 +6,7 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
 module.exports = {
 	mode: "production",
-	entry: path.resolve(__dirname, "./src/index.ts"),
+	entry: { index: path.resolve(__dirname, "./src/index.ts") },
 	module: {
 		rules: [
 			{
@@ -21,19 +21,13 @@ module.exports = {
 	},
 	output: {
 		publicPath: "",
-		filename: "bundle.[hash].js",
+		filename: "[name].js",
 		path: path.resolve(__dirname, "dist"),
 		environment: {
 			arrowFunction: false,
 		},
 	},
-	plugins: [
-		new CopyPlugin({ patterns: [{ from: "public", to: "" }] }),
-		new CleanWebpackPlugin(),
-		new HtmlWebpackPlugin({
-			template: path.resolve(__dirname, "./src/templates/index.html"),
-		}),
-	],
+	plugins: [new CopyPlugin({ patterns: [{ from: "public", to: "" }] }), new CleanWebpackPlugin()],
 	devServer: {
 		inline: true,
 		contentBase: "./public",
