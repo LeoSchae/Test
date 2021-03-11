@@ -3,36 +3,61 @@ html {
 	overflow: hidden;
 }
 
-#overlay {
-	position: absolute;
+#sidepanel-close {
+	width: 20pt;
+	height: 20pt;
+	border-radius: 20%;
+	text-align: center;
+	user-select: none;
+}
+
+#sidepanel-close:hover {
+	background-color: #773737;
+}
+
+#sidepanel-close:active {
+	background-color: #773737;
+	color: #ffffff;
+}
+
+.overlay-button {
+	border-radius: 10px;
+	padding: 5px;
+	background-color: #eeeeeecc;
+}
+
+.overlay-button:hover {
+	background-color: #aaaaaacc;
+}
+
+.overlay-position {
+	position: fixed;
 	top: 0;
 	right: 0;
 	margin: 10px;
+	z-index: 2;
+}
+
+.overlay-content {
 	padding: 10px;
-	z-index: 1;
 	background-color: #ffffffcc;
+	border: 1px solid gray;
 	border-radius: 10px;
 }
 
-@media only screen and (max-width: 600px) {
-	#overlay {
-		background-color: lightblue;
-		display: absolute;
-		margin: 0px;
-		padding: 0px;
-		width: 100%;
-		align-content: center;
-	}
+#sidepanel {
+	width: 300px;
 }
 
-#hamburger {
-	position: block;
+.sidepanel-head {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+#sidepanel-close {
+	display: inline;
 	float: right;
-}
-
-#tools {
-	display: none;
-	margin: 20px;
 }
 
 #bgcanvas,
@@ -43,5 +68,12 @@ html {
 	width: 100%;
 	height: 100%;
 	touch-action: none;
+}
+
+#bgcanvas {
 	z-index: 0;
+}
+
+#fgcanvas {
+	z-index: 1;
 }
